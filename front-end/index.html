@@ -20,11 +20,40 @@
       text-decoration: none;
       color: white !important;
     }
+
+    .header {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header * {
+      margin: 0 10px;
+      width: 33%;
+    }
+    .overlay {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      color: black;
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background-color: white;
+      opacity: 0.5;
+    }
   </style>
 </head>
 
 <body onload="fetchVideoList()">
-  <h2>Video List</h2>
+  <div class="header">
+    <h2>Video List</h2>
+    <input type="file" id="upload-file" accept="video/mp4,video/mkv;">
+    <button id="upload-btn" onclick="uploadFile()">UPLOAD</button>
+  </div>
   <p id="p-message"></p>
   <table id="video-list">
 
@@ -34,30 +63,89 @@
     let list = [];
 
     const fetchVideoList = async () => {
+      setOverlay(true)
       const response = await fetch('/video/list', {
         method: 'GET',
         headers: {
 
         }
-      });
+      }).catch(err => setOverlay());
       const list = await response.json();
+      const table = document.getElementById('video-list');
+      table.innerHTML = null;
+      setOverlay()
       if (list && list.length) {
-        const table = document.getElementById('video-list');
         for (const fileName of list) {
           const link = document.createElement('a');
           link.setAttribute('href', '/app/video?fileName=' + fileName);
           link.textContent = fileName;
           const br = document.createElement('br')
           const tr = document.createElement('tr')
-          const td = document.createElement('td');
-          td.appendChild(link);
-          td.appendChild(br);
-          tr.appendChild(td);
+          const td1 = document.createElement('td');
+          td1.appendChild(link);
+          td1.appendChild(br);
+          tr.appendChild(td1);
+          const td2 = document.createElement('td');
+          td2.textContent = 'DELETE';
+          td2.addEventListener('click', e => deleteFile(fileName))
+          td2.style.cursor = 'pointer';
+          tr.appendChild(td2)
           table.appendChild(tr);
         }
       }
     }
+
+    const uploadFile = () => {
+      console.time('upload')
+      var file = document.getElementById('upload-file');
+      const fileReader = new FileReader();
+      fileReader.readAsArrayBuffer(file.files[0]);
+      setOverlay(true);
+      fileReader.onload = async e => {
+        const content = e.target.result;
+        const CHUNK_SIZE = 1024 * 8; // 1KB
+        const totalChunks = e.target.result.byteLength / CHUNK_SIZE;
+        const fileName = Date.now() + file.files[0].name.replace(/ /g, '_');
+
+        for (let i = 0; i < totalChunks; i++) {
+          let chunk = content.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+
+          await fetch('/video/upload/' + fileName, {
+            method: "POST",
+            header: {
+              "content-type": "application/octet-stream",
+              "content-length": chunk.length,
+            },
+            body: chunk
+          }).catch(err => setOverlay())
+        }
+        setOverlay();
+        console.timeEnd('upload')
+        fetchVideoList();
+      }
+    }
+
+    const fileInput = document.getElementById('upload-file');
+    fileInput.addEventListener('change', e => {
+      const submit = document.getElementById('upload-btn');
+      submit.style.display = 'block';
+    })
+
+    const deleteFile = (fileName) => {
+      fetch('/video/' + fileName, {
+        method: "DELETE",
+      }).then(res => {
+        fetchVideoList();
+      });
+    }
+    const setOverlay = (show = false) => {
+      const ol = document.getElementById('overlay-screen')
+      ol.style.display = show === false ? 'none' : 'flex';
+    }
   </script>
+  <div id="overlay-screen" class="overlay">
+    <h1 class="loading">LOADING</h1>
+  </div>
 </body>
 
 </html>

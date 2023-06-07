@@ -9,7 +9,7 @@ router.get("/test", (req, res) => res.send("testing video route"));
 
 router.get("/list", (req, res) => {
   const dir = fs.readdirSync(join(__dirname, "../../", "public/videos"));
-  res.send(dir);
+  res.send(dir.filter((f) => f.match(/.*\.mkv|.mp4$/)));
 });
 
 router.get("/", (req, res) => {
@@ -19,8 +19,8 @@ router.get("/", (req, res) => {
     res.status(400).send({ message: "please select a file" });
   }
 
-  let contentType = 'video/mp4';
-  if (req.query.fileName.match(/.*\.mkv$/)) contentType = 'video/mkv';
+  let contentType = "video/mp4";
+  if (req.query.fileName.match(/.*\.mkv$/)) contentType = "video/mkv";
   const videoPath = `public/videos/${req.query.fileName}`;
   const videoSize = fs.statSync(join(__dirname, "../../", videoPath)).size;
   const CHUNK_SIZE = 10 ** 6; // 1MB
@@ -35,10 +35,31 @@ router.get("/", (req, res) => {
   };
   res.writeHead(206, headers);
   const videStream = fs.createReadStream(videoPath, { start, end });
-  videStream.on('error', (err) => {
-    console.log('STREAMING ERROR :: ', err)
-  })
+  videStream.on("error", (err) => {
+    console.log("STREAMING ERROR :: ", err);
+  });
   videStream.pipe(res);
 });
 
+router.post("/upload/:fileName", (req, res) => {
+  req.on("data", (data) => {
+    const ws = fs.createWriteStream(
+      join(__dirname, "../../public/videos", req.params.fileName),
+      { flags: "a" }
+    );
+    ws.write(data);
+    req.pipe(ws);
+  });
+  req.on("end", (e) => {
+    res.status(201).send();
+  });
+});
+
+router.delete("/:fileName", (req, res) => {
+  if (!req.params.fileName) {
+    return res.status(400).send({ message: "please select a file " });
+  }
+  fs.unlinkSync(join(__dirname, "../../public/videos", req.params.fileName));
+  res.status(200).send({ message: "file deleted successfully" });
+});
 module.exports = router;
