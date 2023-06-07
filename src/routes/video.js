@@ -13,30 +13,31 @@ router.get("/list", (req, res) => {
 });
 
 router.get("/", (req, res) => {
-  console.log("range === ", req.headers.range);
   if (!req.headers.range) {
     res.status(400).send({ message: "please provide range" });
+  } else if (!req.query.fileName) {
+    res.status(400).send({ message: "please select a file" });
   }
-  const videoPath = "public/videos/file_example_MP4_480_1_5MG.mp4";
-  console.log(videoPath);
-  const start = Number(req.headers.range.replace(/\D/g, ""));
-  const videoSize = fs.statSync(join(__dirname, "../../", videoPath)).size;
-  console.log("vide size", videoSize);
-  const CHUNK_SIZE = 10 ** 6; // 1KB
-  console.log("CHUNK_SIZE", CHUNK_SIZE);
-  const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
-  console.log("end", end);
-  console.log("start", start);
 
-  console.log(">>> ", `bytes ${start}-${end}/${videoSize}`);
+  let contentType = 'video/mp4';
+  if (req.query.fileName.match(/.*\.mkv$/)) contentType = 'video/mkv';
+  const videoPath = `public/videos/${req.query.fileName}`;
+  const videoSize = fs.statSync(join(__dirname, "../../", videoPath)).size;
+  const CHUNK_SIZE = 10 ** 6; // 1MB
+  const start = Number(req.headers.range.replace(/\D/g, ""));
+  const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+  const contentLength = end - start + 1;
   const headers = {
     "Content-Range": `bytes ${start}-${end}/${videoSize}`,
     "Access-range": "bytes",
-    "content-length": end - start + 1,
-    "content-type": "video/mp4",
+    "content-length": contentLength,
+    "content-type": contentType,
   };
   res.writeHead(206, headers);
   const videStream = fs.createReadStream(videoPath, { start, end });
+  videStream.on('error', (err) => {
+    console.log('STREAMING ERROR :: ', err)
+  })
   videStream.pipe(res);
 });
 

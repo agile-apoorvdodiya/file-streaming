@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STREAMING</title>
+  <style>
+    body {
+      background-color: slategray;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 5%;
+      align-items: center;
+    }
+
+    a {
+      color: darkslateblue;
+    }
+    #videoPlayer {
+      border-radius: 10px;
+      border: 4px black;
+    }
+  </style>
+</head>
+
+<body onload="loadVideo()">
+  <video id="videoPlayer" width="100%" controls muted="muted" autoplay>
+    <!-- <source src="/video" type="video/mp4" /> -->
+  </video>
+
+  <h6>REFERENCE: <a
+      href="https://blog.logrocket.com/build-video-streaming-server-node/">https://blog.logrocket.com/build-video-streaming-server-node/</a>>
+  </h6>
+
+  <script>
+    const loadVideo = () => {
+      const fileName = new URLSearchParams(window.location.search).get('fileName');
+      const video = document.getElementById('videoPlayer');
+
+      const source = document.createElement('source');
+      source.setAttribute('src', '/video?fileName=' + fileName);
+      // source.setAttribute('type', 'video/mp4');
+      video.appendChild(source);
+
+    }
+  </script>
+</body>
+
+</html>

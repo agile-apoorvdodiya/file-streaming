@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STREAMING</title>
+  <style>
+    body {
+      background-color: darkslategray;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      padding: 5%;
+      align-items: center;
+    }
+
+    a {
+      text-decoration: none;
+      color: white !important;
+    }
+  </style>
+</head>
+
+<body onload="fetchVideoList()">
+  <h2>Video List</h2>
+  <p id="p-message"></p>
+  <table id="video-list">
+
+  </table>
+  <script>
+    let loading = false;
+    let list = [];
+
+    const fetchVideoList = async () => {
+      const response = await fetch('/video/list', {
+        method: 'GET',
+        headers: {
+
+        }
+      });
+      const list = await response.json();
+      if (list && list.length) {
+        const table = document.getElementById('video-list');
+        for (const fileName of list) {
+          const link = document.createElement('a');
+          link.setAttribute('href', '/app/video?fileName=' + fileName);
+          link.textContent = fileName;
+          const br = document.createElement('br')
+          const tr = document.createElement('tr')
+          const td = document.createElement('td');
+          td.appendChild(link);
+          td.appendChild(br);
+          tr.appendChild(td);
+          table.appendChild(tr);
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>
